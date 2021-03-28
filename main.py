@@ -17,13 +17,31 @@ def train():
         target = list(map(lambda x: x[1], csv.reader(file)))
     target.pop(0)
 
-    dataset = StargazersDataset(edges, target)
-    data_loader = DataLoader(dataset, batch_size=config['training']['batch_size'], shuffle=config['training']['shuffle'])
+    dataset = StargazersDataset(edges, target[:1])
+    data_loader = DataLoader(dataset, batch_size=config['training']['batch_size'],
+                             shuffle=config['training']['shuffle'])
 
     device = torch.device('cuda') if config['use_gpu'] else torch.device('cpu')
-    model = GIN()
+    model = GIN(device)
     model = model.float()
     model = model.to(device)
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=config['training']['learning_rate'])
+    loss_function = torch.nn.BCEWithLogitsLoss()
+    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.3, patience=0,
+    #                                                        threshold=1e-8, min_lr=1e-6)
+
+    for epoch in range(config['training']['epochs']):
+        training_loss = 0.
+        for idx, data in enumerate(data_loader):
+            optimizer.zero_grad()
+            out = model(data.to(device))
+            loss = loss_function(out, data.y)
+            loss.backward()
+            optimizer.step()
+            training_loss += loss.item()
+        print(training_loss)
+        # scheduler.step(training_loss)
 
 
 if __name__ == '__main__':
