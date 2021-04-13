@@ -1,5 +1,5 @@
 from data import StargazersDataset
-from model import GIN
+from model import Model
 import csv
 import json
 import torch
@@ -20,7 +20,7 @@ class GithubStargazers:
         target.pop(0)
 
         self.device = torch.device('cuda') if config['use_gpu'] else torch.device('cpu')
-        model = GIN(self.device)
+        model = Model(self.device)
         model = model.float()
         self.model = model.to(self.device)
 
@@ -40,8 +40,8 @@ class GithubStargazers:
 
     def train(self):
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.config['training']['learning_rate'])
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.3, patience=0,
-                                                               threshold=1e-8, min_lr=1e-6)
+        # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.3, patience=2,
+        #                                                        threshold=1e-8, min_lr=1e-6)
         for epoch in range(self.config['training']['epochs']):
             self.model.train()
             training_loss = 0.
@@ -59,7 +59,7 @@ class GithubStargazers:
             val_loss, val_acc = self.eval(val=True)
             print('Training loss:', f'{training_loss:.6f}', 'Training acc:', f'{training_acc:.6f}',
                   'Val loss:', f'{val_loss:.6f}', 'Val acc:' f'{val_acc:.6f}')
-            scheduler.step(training_loss)
+            # scheduler.step(training_loss)
         test_loss, test_acc = self.eval(val=False)
         print('Test loss / acc:', test_loss, test_acc)
 
